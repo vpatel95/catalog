@@ -46,4 +46,5 @@ def require_login(f):
 	return decorated_function
 
 def random_string():
-	return ''.join(random.choice(string.ascii_uppercase + string.digits) for x in xrange(32))
+	return ''.join(random.choice(string.ascii_uppercase + string.digits) 
+		   for x in xrange(32))

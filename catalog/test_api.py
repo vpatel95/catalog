@@ -1,4 +1,5 @@
-from flask import Flask, Blueprint, Response, request, abort, render_template, make_response, flash, redirect, url_for
+from flask import Flask, Blueprint, Response, request, abort
+from flask import render_template, make_response, flash, redirect, url_for
 from flask import session as login_session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker

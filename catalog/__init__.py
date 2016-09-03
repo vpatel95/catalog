@@ -1,10 +1,12 @@
-from flask import Flask, Blueprint, Response, request, abort, render_template, make_response, flash, redirect, url_for
+from flask import Flask, Blueprint, Response, request, abort
+from flask import render_template, make_response, flash, redirect, url_for
 from flask import session as login_session
 from werkzeug import secure_filename
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from functools import wraps
-import random, string
+import random
+import string
 import json
 import time
 import hashlib
@@ -26,37 +28,39 @@ app = Flask(__name__)
 app.secret_key = utils.random_string()
 app.config.from_pyfile("config.py")
 
+
 # CSRF Protection
 @app.before_request
 def csrf_protect():
-	'''
-		Check csrf_token for every coming post request.
-		Csrf_token could be in url arguments or inside the post form data.
-	'''
-	if request.method == "POST":
-		token = request.form.get('_csrf_token')
-		if token is None:
-			token = request.args.get('_csrf_token')
-		stored_token = login_session.pop('_csrf_token', None)
-		if not stored_token or stored_token != token:
-			abort(403)
+    '''
+        Check csrf_token for every coming post request.
+        Csrf_token could be in url arguments or inside the post form data.
+    '''
+    if request.method == "POST":
+        token = request.form.get('_csrf_token')
+        if token is None:
+            token = request.args.get('_csrf_token')
+        stored_token = login_session.pop('_csrf_token', None)
+        if not stored_token or stored_token != token:
+            abort(403)
+
 
 def generate_csrf_token():
-	'''
-		Generate a random string as csrf_token
-	'''
-	if '_csrf_token' not in login_session:
-		login_session['_csrf_token'] = utils.random_string()
-	return login_session['_csrf_token']
+    '''
+        Generate a random string as csrf_token
+    '''
+    if '_csrf_token' not in login_session:
+        login_session['_csrf_token'] = utils.random_string()
+    return login_session['_csrf_token']
 
-app.jinja_env.globals['csrf_token'] = generate_csrf_token	
+app.jinja_env.globals['csrf_token'] = generate_csrf_token
 
 BLUEPRINTS = [
-	(test_api, ''),
-	(view, ''),
-	(oauth_api, ''),
-	(data_api, ''),
+    (test_api, ''),
+    (view, ''),
+    (oauth_api, ''),
+    (data_api, ''),
 ]
 
 for blueprint, url_prefix in BLUEPRINTS:
-	app.register_blueprint(blueprint, url_prefix=url_prefix)
+    app.register_blueprint(blueprint, url_prefix=url_prefix)
