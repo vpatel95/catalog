@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>{{  config.TITLE }}</title>
+	<link href="http://localhost:8000/static/bootstrap/dist/css/bootstrap.css" rel="stylesheet">
+	<link href="http://localhost:8000/static/css/app.css" rel="stylesheet">
+	<link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+</head>
+<body>
+	<!-- Button trigger modal -->
+	<button id='modal-trigger' type='button' class="btn btn-primary btn-lg" data-toggle="modal" data-target="#flashes-display-modal"></button>
+
+	<!-- Message Modal -->
+	<div class="modal fade" id="flashes-display-modal" tabindex="-1" role="dialog" aria-labelledby="flashes-display-modal-title">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+					<h4 class="modal-title" id="flashes-display-modal-title">Attention Please</h4>
+				</div>
+				<div class="modal-body">
+					{% with messages = get_flashed_messages() %}
+					{% if messages %}
+					{% for message in messages %}
+					<p>{{ message }}</p>
+					{% endfor %}
+					{% endif %}
+					{% endwith %}
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<nav class="navbar navbar-fixed-top navbar-colored" role="navigation">
+		<div class="container">
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+					<span class="sr-only">Toggle navigation</span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+				<a class="navbar-brand" href="/">{{ config.TITLE }}</a>
+				
+			</div>
+
+			<!-- Collect the nav links, forms, and other content for toggling -->
+			<div class="collapse navbar-collapse navbar-ex1-collapse">
+				<ul class="nav navbar-nav navbar-right">
+					<li><div id="signinButton" class="navbar-right">
+						<span class="g-signin" 
+							data-scope='openid email' 
+							data-clientid='618870093701-lsqltso4nlv11bn4jb0763mns7p8sik1.apps.googleusercontent.com' 
+							data-redirecturi='http://lh:8000' 
+							data-accesstype='offline' 
+							data-cookiepolicy='single_host_origin' 
+							data-callback='signInCallback' 
+							data-approvalprompt='force'>
+						</span>
+					</div></li>
+					<li>
+						<div id="user-info">
+							<div id="logoutButton">Log Out</div>
+							<div id="display-email">{{ session.email }}</div>
+							<img id='avatar' src='{{ session.picture }}'>
+						</div>
+					</li>
+				</ul>
+			</div>
+			<!-- /.navbar-collapse -->
+		</div>
+		<!-- /.container -->
+	</nav>
+	<div class="row row-gap-huge"></div>
+	<div class="container" ng-view>
+		<div class="left container col-md-3">
+			<h4 class="text-center">Catelog of Chinese Food</h4>
+			<div class="list-group">
+				{% for catalog in catalogs %}
+				<a href="/catalogs/{{ catalog.name }}" class="list-group-item">
+					<span class="badge">{{ catalog.quantity }}</span>
+					{{ catalog.name }}
+				</a>
+				{% endfor %}
+				{% if session.email %}
+				<a href="/catalogs/new" class="list-group-item">
+					<span class="badge">&plus;</span>
+					ADD CATALOG
+				</a>
+				{% endif %}
+			</div>
+		</div>
+		<div class="col-xs-1"></div>
+		<div class="right container col-md-8">
+			{% block body %}{% endblock %}
+		</div>
+	</div>
+
+	<script src="http://localhost:8000/static/jquery/jquery.js"></script>
+	<script src="http://localhost:8000/static/bootstrap/dist/js/bootstrap.min.js"></script>
+	<script src="https://apis.google.com/js/client.js?onload=start" async defer></script>
+	<script type="text/javascript">
+		$(function(){
+			{% if get_flashed_messages() %}
+			$('#modal-trigger').click();
+			setTimeout(function(){$('.modal .close').click();}, 3000)
+			{% endif %}
+
+			{% if session.email %}
+			$('#signinButton').hide();
+			{% else %}
+			$('#signinButton').show();$('#user-info').hide();
+			{% endif %}
+
+			$("#logoutButton").click(function(e){
+				$.ajax({
+					type: 'GET',
+					url: '/gdisconnect',
+					processData: false,
+					success: function(result) {
+						console.log(result);
+						$('#signinButton').show();
+						$('#user-info').hide();
+						console.log('Successfully log out!');
+						location.reload();						
+					}
+				})
+			});
+
+			$(".clickable-row").click(function() {
+				window.document.location = $(this).data("href");
+			});
+		});
+
+		(function() {
+			var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
+			po.src = 'https://apis.google.com/js/client:plusone.js';
+			var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+		})();
+		function signInCallback(authResult){
+			console.log(authResult)
+			if (authResult['code']) {
+				$('#signinButton').hide();
+				$.ajax({
+					type: 'POST',
+					url: '/gconnect?_csrf_token={{ csrf_token() }}',
+					processData: false,
+					contentType: 'application/octet-stream; charset=utf-8',
+					data: authResult['code'],
+					success: function(result) {
+						if (result) {
+							console.log('Login successfully!');
+							console.log(result);
+							$('#user-info').show();
+							$('#display-email').html(result)
+							location.reload();
+						} else if (authResult['error']) {
+							console.log("Error: " + authResult['error']);
+						} else {
+							console.log("Fatal error");
+						}
+					}
+				})
+			}
+		}
+	</script>
+</body>
+</html>
